@@ -747,6 +747,17 @@ func (s *GRPCProviderServer) ApplyResourceChange(_ context.Context, req *proto.A
 		}
 	}
 
+	// We need to fix any sets that may be using the "~" index prefix to
+	// indicate partially computed. The special sigil isn't really used except
+	// as a clue to visually indicate that the set isn't wholly known.
+	tmpAttrs := make(map[string]*terraform.ResourceAttrDiff)
+	for k, d := range diff.Attributes {
+		k = strings.Replace(k, ".~", ".", -1)
+		tmpAttrs[k] = d
+	}
+
+	diff.Attributes = tmpAttrs
+
 	// add NewExtra Fields that may have been stored in the private data
 	if newExtra := private[newExtraKey]; newExtra != nil {
 		for k, v := range newExtra.(map[string]interface{}) {
